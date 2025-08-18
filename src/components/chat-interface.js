@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Send, Sparkles, Copy, ThumbsUp, ThumbsDown } from 'lucide-react'
-import { MessageBubble } from './message-bubble'
-import { TypingIndicator } from './typing-indicator'
+import { useState, useRef, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Send, Sparkles, Copy, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { MessageBubble } from './message-bubble';
+import { TypingIndicator } from './typing-indicator';
+import { sendChatToGemini } from '@/lib/api/chat';
 
 export function ChatInterface({ chat, onUpdateMessages, onUpdateTitle, onNewChat }) {
     const [input, setInput] = useState('')
@@ -14,7 +15,7 @@ export function ChatInterface({ chat, onUpdateMessages, onUpdateTitle, onNewChat
     const textareaRef = useRef(null)
     const [isLoading, setIsLoading] = useState(false)
 
-
+    // const reply = sendChatToGemini(onUpdateMessages);
 
 
     useEffect(() => {
@@ -34,17 +35,42 @@ export function ChatInterface({ chat, onUpdateMessages, onUpdateTitle, onNewChat
     }
 
     const handleSubmit = async (e) => {
-        e.preventDefault()
-        if (!input.trim()) return
+        e.preventDefault();
+        if (!input.trim()) return;
 
-        let chatId = chat?.id
+        setIsLoading(true);
+
+
+        const newMessages = [...messages, { role: 'user', content: input }];
+        setMessages(newMessages);
+        setInput('');
+
+        let chatId = chat?.id;
         if (!chatId) {
-            chatId = onNewChat()
+            chatId = onNewChat();
         }
 
-        await append({ role: 'user', content: input })
-        setInput('')
-    }
+        try {
+            const reply = await sendChatToGemini(newMessages);
+            const updatedMessages = [...newMessages, { role: 'assistant', content: reply }];
+            setMessages(updatedMessages);
+
+            if (chat) {
+                onUpdateMessages(chat.id, updatedMessages);
+
+
+                if (chat.title === 'New Chat' && updatedMessages.length >= 2) {
+                    const first = updatedMessages.find(m => m.role === 'user');
+                    const title = first?.content.slice(0, 30) + (first?.content.length > 30 ? '...' : '');
+                    onUpdateTitle(chat.id, title);
+                }
+            }
+        } catch (error) {
+            console.error('Gemini error:', error.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -116,21 +142,21 @@ export function ChatInterface({ chat, onUpdateMessages, onUpdateTitle, onNewChat
             </div>
 
             <div className="border-t p-4">
-                <form onSubmit={handleSubmit} className=" flex items-center max-w-4xl mx-auto">
-                    {/* <Textarea
+                <form onSubmit={handleSubmit} className="relative flex items-center max-w-4xl mx-auto">
+                    <Textarea
                         ref={textareaRef}
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={handleKeyDown}
                         placeholder="Enter a prompt here"
-                        className="h-[50px] resize-none pr-12 rounded-3xl border-2 focus:border-primary"
+                        className="h-[20px] resize-none pr-12 rounded-3xl border-2 focus:border-primary"
                         disabled={isLoading}
-                    /> */}
+                    />
                     <Button
                         type="submit"
                         size="icon"
                         disabled={!input.trim() || isLoading}
-                        className="absolute right-2 bottom-2 h-8 w-8 rounded-full"
+                        className="absolute right-2 bottom-4 h-8 w-8 rounded-full"
                     >
                         <Send className="h-4 w-4" />
                     </Button>
