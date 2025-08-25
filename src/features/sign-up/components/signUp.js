@@ -42,6 +42,11 @@ function SignUp() {
     }
 
 
+    const handleGoogleLogin = () => {
+        window.location.href = 'http://localhost:8000/auth/google'
+    }
+
+
     const onSubmit = async (userData) => {
         try {
             const response = await signUpUser(userData)
@@ -68,7 +73,7 @@ function SignUp() {
                         <div className='flex flex-col items-center justify-center gap-4'>
                             <Image src={logo} alt='logo.png' width={100} height={100} />
                             <h1 className='text-[#111] text-[28px] font-semibold'>Create an account</h1>
-                            <Button className="text-[#111] bg-transparent border-[1px] border-[#52A2F5] hover:bg-[#52A2F5] hover:text-white cursor-pointer hover:border-[#52A2F5] py-6 text-[15px] px-24">Create account with google
+                            <Button onClick={handleGoogleLogin} className="text-[#111] bg-transparent border-[1px] border-[#52A2F5] hover:bg-[#52A2F5] hover:text-white cursor-pointer hover:border-[#52A2F5] py-6 text-[15px] px-24">Create account with google
                                 <Image src={googleicn} alt='googneicn.png' width={20} height={20} />
                             </Button>
                             <div className="flex items-center justify-center space-x-4">
